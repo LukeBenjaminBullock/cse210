@@ -1,0 +1,12 @@
+Date: 2023-01-14 12:00:00 AM
+Prompt: What was the proudest moment of my day?
+A
+
+Date: 2023-01-14 12:00:00 AM
+Prompt: What was a struggle that I overcame today?
+B
+
+Date: 2023-01-14 12:00:00 AM
+Prompt: If I had one thing I could do over today, what would it be?
+C
+
