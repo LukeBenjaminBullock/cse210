@@ -15,8 +15,6 @@
             }
         
 
-        // ? Should this be void or not? 
-        // ! I have this commented out for now. 
 
             public string AddToEnteries()
             {
@@ -25,8 +23,6 @@
             }
 
         }
-
-        // ! I have commented this out for now. 
 
         public class Journal
         {
@@ -37,12 +33,6 @@
             public Journal()
             {
 
-            }
-
-            // ? How should I format any of the following methods? 
-            public void Write()
-            {
-                
             }
 
             public void DisplayList()
