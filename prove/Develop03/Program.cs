@@ -1,5 +1,5 @@
 using System;
-
+using System.Text.RegularExpressions;
 
 class Program
 {
@@ -8,6 +8,11 @@ class Program
         // ! Declaring variables
         string answer = "";
         bool value = true;
+
+        Console.Write("How many words would you like to remove at a time? ");
+        string placeholder = Console.ReadLine();
+
+        int amount = int.Parse(placeholder);
 
         DisplayScripture scripture = new DisplayScripture();
         scripture.InitializeValue(); 
@@ -25,9 +30,16 @@ class Program
             }
 
             if (answer == "")
-            {
-                scripture.UpdateValue();
-            }
+            {   
+                for (int i = 0; i < amount; i++)
+                {
+                    scripture.UpdateValue();
+                    if (scripture.CheckVerse() == true)
+                    {
+                        break;
+                    }
+                }
+            }   
             else if (answer == "quit")
             {
                 Console.WriteLine(" ");
@@ -39,5 +51,6 @@ class Program
             }
 
         } while (answer != "quit");
+
     }
 }

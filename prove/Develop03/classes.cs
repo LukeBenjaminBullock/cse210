@@ -1,3 +1,5 @@
+using System.Text.RegularExpressions;
+
 // ! Class 1 
 public class GetScripture
 {
@@ -11,17 +13,40 @@ public class GetScripture
 
     public void GetValues()
     {
-        string filePath = "scripture.txt"; 
+        string filePath = "scripture.txt";
+        List<string> firstLines = new List<string>();
+        List<string> otherLines = new List<string>();
 
-        string[] lines = File.ReadAllLines(filePath);
+        using (StreamReader reader = File.OpenText(filePath))
+        {
+            string text = reader.ReadToEnd();
+            string[] sections = text.Split(new string[] { "---" }, StringSplitOptions.RemoveEmptyEntries);
+            for (int i = 0; i < sections.Length; i++)
+            {
+                string[] lines = sections[i].Split(new string[] { "\r\n", "\n" },
+                    StringSplitOptions.None);
+                firstLines.Add(lines[1]);
 
-        _scriptureHead = lines[0];
+                string currentItem = "";
 
-        string verse = String.Join(" ", lines.Skip(1));
+                for (int j = 2; j < lines.Length; j++)
+                {
+                    currentItem += lines[j];
+                    currentItem += " ";
+                }
+                otherLines.Add(currentItem);
+            }
+        }
 
-        string[] words = verse.Split(new char[] {' '}, StringSplitOptions.RemoveEmptyEntries);
+        Random rand = new Random();
+        int firstLineCount = firstLines.Count;
+        int randomIndex = rand.Next(0, firstLineCount);
 
-        _originalVerse = words.ToList(); 
+        string[] verse = otherLines[randomIndex].Split(new string[] { " " }, StringSplitOptions.None);
+
+        _scriptureHead = firstLines[randomIndex];
+
+        _originalVerse.AddRange(verse); 
 
     }
 
@@ -39,7 +64,7 @@ public class GetScripture
 // ! Class 2
 public class RandomizeScripture
 {
-    private List<string> _oldVerse = new List<string>(); 
+    public List<string> _oldVerse = new List<string>(); 
     private List<int> _blankIndexes = new List<int>(); 
     private List<string> _modifiedVerse = new List<string>(); 
     private int _listLength = 0;
@@ -117,6 +142,7 @@ public class DisplayScripture
         _verse = oldScripture.ReturnVerse(); 
         scripture = new RandomizeScripture();
         scripture.GetOldVerse();
+        _verse = scripture._oldVerse;
     }
 
     public void UpdateValue()
