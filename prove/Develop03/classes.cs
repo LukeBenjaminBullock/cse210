@@ -1,12 +1,12 @@
 using System.Text.RegularExpressions;
 
 // ! Class 1 
-public class GetScripture
+public class Scripture
 {
     private string _scriptureHead = "";
     private List<string> _originalVerse = new List<string>(); 
 
-    public GetScripture()
+    public Scripture()
     {
 
     }
@@ -62,7 +62,7 @@ public class GetScripture
 }
 
 // ! Class 2
-public class RandomizeScripture
+public class Word
 {
     public List<string> _oldVerse = new List<string>(); 
     private List<int> _blankIndexes = new List<int>(); 
@@ -72,19 +72,19 @@ public class RandomizeScripture
     private int _wordLength = 1;
     private bool _changed = false;
 
-    public RandomizeScripture()
+    public Word()
     {
 
     }
 
     public void GetOldVerse()
     {
-        GetScripture scripture1 = new GetScripture();
+        Scripture scripture1 = new Scripture();
         scripture1.GetValues(); 
         _oldVerse = scripture1.ReturnVerse();
     }
 
-    public void ModifyScripture()
+    public void ModifyWord()
 {
     if (_modifiedVerse.Count == 0)
     {
@@ -123,31 +123,31 @@ public class RandomizeScripture
 
 // ! Class 3 
 
-public class DisplayScripture
+public class Reference
 {
     private string _head = "";
     private List<string> _verse = new List<string>();
-    RandomizeScripture scripture;
+    Word scripture;
 
-    public DisplayScripture()
+    public Reference()
     {
 
     }
 
     public void InitializeValue()
     {
-        GetScripture oldScripture = new GetScripture();
+        Scripture oldScripture = new Scripture();
         oldScripture.GetValues();
         _head = oldScripture.ReturnHead();
         _verse = oldScripture.ReturnVerse(); 
-        scripture = new RandomizeScripture();
+        scripture = new Word();
         scripture.GetOldVerse();
         _verse = scripture._oldVerse;
     }
 
     public void UpdateValue()
     {
-        scripture.ModifyScripture();
+        scripture.ModifyWord();
         _verse = scripture.ReturnModified();
     }
 

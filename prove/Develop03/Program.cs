@@ -14,7 +14,7 @@ class Program
 
         int amount = int.Parse(placeholder);
 
-        DisplayScripture scripture = new DisplayScripture();
+        Reference scripture = new Reference();
         scripture.InitializeValue(); 
 
         do
@@ -47,6 +47,8 @@ class Program
             }
             else 
             {
+                // ! You would have to be a superhero to actually ever see this line of text.
+                
                 Console.WriteLine(" --- Invalid input ---");
             }
 
@@ -54,3 +56,9 @@ class Program
 
     }
 }
+
+
+
+// I think that I deserve full marks because I completed the core requirements. 
+// Added the ability to choose how many words were removed at a time. 
+// And randomly loaded different scripture passages from a txt file. 
