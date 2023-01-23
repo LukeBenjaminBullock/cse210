@@ -48,7 +48,7 @@ class Program
             else 
             {
                 // ! You would have to be a superhero to actually ever see this line of text.
-                
+
                 Console.WriteLine(" --- Invalid input ---");
             }
 
