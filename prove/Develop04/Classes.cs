@@ -70,7 +70,7 @@ public class Activity
     public void ClearLine(){
         Console.SetCursorPosition(0, Console.CursorTop);
         Console.Write(Enumerable.Repeat<char>(' ', Console.BufferWidth).ToArray());
-        Console.SetCursorPosition(0, Console.CursorTop - 1);
+        Console.SetCursorPosition(0, Console.CursorTop);
     }
 
     public int GetTimeInput(){
