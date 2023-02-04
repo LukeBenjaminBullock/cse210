@@ -1,9 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
-<GoalsData xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema">
-  <TotalPoints>4</TotalPoints>
-  <Goals>
-    <Goals xsi:type="SimpleGoal" />
-    <Goals xsi:type="SimpleGoal" />
-    <Goals xsi:type="ChecklistGoal" />
-  </Goals>
-</GoalsData>
+250
+Give a talk,  Speak in Sacrament meeting when asked,  10000, True, False,
+Study the scriptures,  Study for at least 10 minutes,  50, False, False,
+Attend the temple,  Attend and perform any ordinance,  50, False, False, 3, 1, 500
