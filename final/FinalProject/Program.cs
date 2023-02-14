@@ -315,6 +315,7 @@ class Program
                     game.Update(keysPressed, playerSpace, frameCounter); 
 
                 }
+                
 
                 game.Redraw();
 

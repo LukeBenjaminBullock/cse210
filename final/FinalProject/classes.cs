@@ -222,27 +222,26 @@ public class Projectile : Object
 
         bool animate = _animation.Animate(frameCounter);
 
-        if (animate)
+        
+        if (_direction)
         {
-            if (_direction)
+            if (insideRightWall)
             {
-                if (insideRightWall)
-                {
-                    this.SetLocation(currentX + 1, currentY);
-                } else
-                {
-                    this.Destroy();
-                }
-            } else if (!_direction)
+                this.SetLocation(currentX + 1, currentY);
+            } else
             {
-                if (insideLeftWall)
-                {
-                    this.SetLocation(currentX - 1, currentY);
-                } else
-                {
-                    this.Destroy();
-                }
+                this.Destroy();
             }
+        } else if (!_direction)
+        {
+            if (insideLeftWall)
+            {
+                    this.SetLocation(currentX - 1, currentY);
+            } else
+            {
+                this.Destroy();
+            }
+            
         }
 
     }
