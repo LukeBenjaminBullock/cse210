@@ -187,17 +187,17 @@ public class Object
 
 public class Projectile : Object
 {
-    private int _damage;
-    private int _speed;
+    // private int _damage; // Not needed for simpler game. 
+    // private int _speed; Not needed for simpler game. 
     private bool _direction; // true is right, false is left. Meaning that true is player and false is enemy. 
-    private Animation _animation; 
+    // private Animation _animation; Not needed for simpler game. 
 
-    public Projectile(int x, int y, List<string> drawing, int speed, int damage, bool direction, Animation animation) : base(x, y, drawing)
+    public Projectile(int x, int y, List<string> drawing, bool direction) : base(x, y, drawing)
     {
-        _speed = speed;
-        _damage = damage;
+        // _speed = speed;
+        // _damage = damage;
         _direction = direction;
-        _animation = animation;
+        // _animation = animation;
     }
 
     public void Move(List<int> backgroundRect, int frameCounter)
@@ -218,9 +218,11 @@ public class Projectile : Object
 
         bool insideRightWall = this.DetectCollision(rightRectangle);
 
-        _animation.SetFrames(_speed);
 
-        bool animate = _animation.Animate(frameCounter);
+        // ! This made it so that only one bullet would move at a time. 
+        // _animation.SetFrames(_speed);
+
+        // bool animate = _animation.Animate(frameCounter); 
 
         
         if (_direction)
@@ -246,15 +248,15 @@ public class Projectile : Object
 
     }
 
-    public int GetDamage()
-    {
-        return _damage;
-    }
+    // public int GetDamage()
+    // {
+    //     return _damage;
+    // }
 
-    public int GetSpeed()
-    {
-        return _speed;
-    }
+    // public int GetSpeed()
+    // {
+    //     return _speed;
+    // }
 
     public bool GetDirection()
     {
@@ -265,19 +267,19 @@ public class Projectile : Object
 
 public class Enemy : Object
 {
-    private int _damage;
+    // private int _damage; Not required for our simplified program. 
 
     private Projectile _projectile;
 
     private int _health;
 
-    private int _speed;
+    // private int _speed; Not needed for simpler game
 
-    public Enemy(int x, int y, List<string> drawing, int speed, int health, int damage) : base(x, y, drawing)
+    public Enemy(int x, int y, List<string> drawing, int health) : base(x, y, drawing)
     {
-        _speed = speed;
+        // _speed = speed;
         _health = health;
-        _damage = damage;
+        // _damage = damage;
     }
 
     public void Move()
@@ -292,14 +294,23 @@ public class Enemy : Object
         return _health;
     }
 
-    public int GetDamage()
-    {
-        return _damage;
-    }
+    // public int GetDamage()
+    // {
+    //     return _damage;
+    // }
 
     public void SetProjectile(Projectile projectile) // ! The reson we don't set this in the constructor is because some ships won't have projectiles.
     {
         _projectile = projectile;
+    }
+
+    public void TakeDamage()
+    {
+        _health -= 1;
+        if (_health == 0)
+        {
+            this.Destroy();
+        }
     }
 
 }
@@ -365,14 +376,8 @@ public class Player : Object
             this.Clear();
             this.SetLocation(currentX, currentY + 1);
         }
-
-
-        // Todo: Check which key is being pressed. w = up, d = right, s = down, a = left. 
-        // Todo: check if the movement takes the player out of the background, if it does. Do nothing. 
-        // Todo: Clear the player from the previous position, and draw him at the next one. 
     }
 
-    // Health [][][][][][][][][][][][][][][][][][][][][][][][][][][][][][] everytime the player loses 5 health get rid of one quare, making for a total of 300 health. 
 
     public int GetHealth()
     {
@@ -382,6 +387,15 @@ public class Player : Object
     public void SetProjectile(Projectile projectile)
     {
         _projectile = projectile;
+    }
+
+    public void TakeDamage()
+    {
+        _health -= 1;
+        if (_health == 0)
+        {
+            this.Destroy();
+        }
     }
 
 
@@ -565,6 +579,22 @@ public class LoadScreen
                     }
                 }
             }
+
+            if (_enemyProjectiles is List<Projectile>)
+            {
+                for (int i = _playerProjectiles.Count - 1; i >= 0; i--)
+                {
+                    var projectile = _playerProjectiles[i];
+                    projectile.SetDimensions(); 
+                    projectile.Move(backgroundRect, frameCounter);
+                    bool isDestroyed = projectile.GetDestroyed(); 
+                    if (isDestroyed)
+                    {   
+                        projectile.Clear();
+                        _playerProjectiles.RemoveAt(i);
+                    }
+                }
+            }
             
             if (_player is Player)
             {
@@ -604,6 +634,11 @@ public class LoadScreen
             _player.Draw();
         }
 
+        foreach (var enemy in _enemies)
+        {
+            enemy.Draw();
+        }
+
     }
 }
 
@@ -621,14 +656,14 @@ public class Animation
 
     public bool Animate(int frameCounter)
     {
-        if (frameCounter <= 100 && _timesAnimated >= (3000 / _animationFrames))
+        if (frameCounter == 0)
         {
             _counter = 0;
             _timesAnimated = 0;
         }
-        if (frameCounter >= (_counter + _animationFrames))
+        if (frameCounter >= (_counter * _animationFrames))
         {
-            _counter += _animationFrames;
+            _counter += 1;
             _timesAnimated++;
             return true;
         }

@@ -36,22 +36,41 @@ class Program
         Animation startAnimation = new Animation();
         startAnimation.SetFrames(30);
 
+        Animation spawnClock = new Animation(); 
+        spawnClock.SetFrames(600);
+
+        Animation shootClock = new Animation(); 
+        shootClock.SetFrames(120);
+
         // Initialize variables
         List<string> lineProjectile = new List<string>
         {
             "-"
         };
 
+        List<string> circleProjectile = new List<string>
+        {
+            "o"
+        };
+
+        List<string> basicEnemy = new List<string>
+        {
+            "{"
+        };
+
         HashSet<ConsoleKey> keysPressed = new HashSet<ConsoleKey>();
         List<Background> backgrounds = new List<Background>();
-        List<Projectile> projectiles = new List<Projectile>();
+        List<Projectile> enemyProjectiles = new List<Projectile>();
+        List<Projectile> playerProjectiles = new List<Projectile>(); 
         // ! Ill have to setup the player class individually. 
         List<Enemy> enemies = new List<Enemy>();
         List<Structures> structures = new List<Structures>();
 
         Animation baseBulletSpeed = new Animation(); 
 
-        Projectile baseProjectile = new Projectile(0, 0, lineProjectile, 3, 3, true, baseBulletSpeed);
+        Projectile baseProjectile = new Projectile(0, 0, lineProjectile, true);
+
+        Projectile baseEnemyProjectile = new Projectile(0, 0, circleProjectile, false);
 
         string scene = "start";
         int fps = 60;
@@ -67,9 +86,21 @@ class Program
 
         bool sceneChange = true; 
 
+        int level = 0;
+        int spawnRate = 600;
+        int bulletRate = 120;
+        int enemyNumber = 1; 
+        int enemiesKilled = 0;
+        int currentScore = 0;
+        bool skipSpawn = false; 
+        int healthDisplayNumber = 55;
+        string healthDisplayString = string.Concat(Enumerable.Repeat("[]", healthDisplayNumber));
+
         // Initilize other
 
         stopwatch.Start();
+
+        Random random = new Random(); 
 
         LoadScreen game = null;
         LoadScreen start = null;
@@ -87,15 +118,15 @@ class Program
         {
             double elapsedTime = stopwatch.ElapsedMilliseconds;
             // * I hope this will auto refresh every frame. 
-            if (elapsedTime >= 60000)
+            if (frameCounter < 6000) // The framerate resets every 100 seconds. 
+            {
+                frameCounter += 1;
+            }
+            else
             {
                 frameCounter = 0;
                 stopwatch.Reset();
                 stopwatch.Restart();
-            }
-            else
-            {
-                frameCounter = (int)(elapsedTime / 16.67);
             }
 
             // * Check window size 
@@ -202,7 +233,7 @@ class Program
 
                 startAnimation.SetFrames(30); 
                 startAnimation.Animate(frameCounter);
-                    int change = startAnimation.GetTimes();
+                int change = startAnimation.GetTimes();
 
                     if (change % 2 == 0)
                     {
@@ -236,17 +267,52 @@ class Program
             else if (scene == "game")
             {
 
-                if (game == null)
+                if (sceneChange)
                 {
+
+                    level = 1;
+                    spawnRate = 600; 
+
                     List<string> gameBackground = new List<string> // ! Later we will have to update this background to change height depending on the current wave
                     {
-                    " ____________________________________________________________________________",
-                    "|                                                                            |",
-                    "|                                                                            |",
-                    "|                                                                            |",
-                    "|                                                                            |",
-                    "|                                                                            |",
-                    "||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||"
+                    " _____________________________________________________________________________________________________________________",
+                    "|                                                                                                                     |",
+                    "|                                                                                                                     |",
+                    "|                                                                                                                     |",
+                    "|                                                                                                                     |",
+                    "|                                                                                                                     |",
+                    "|                                                                                                                     |",
+                    "|                                                                                                                     |",
+                    "|                                                                                                                     |",
+                    "|                                                                                                                     |",
+                    "|                                                                                                                     |",
+                    "|                                                                                                                     |",
+                    "|                                                                                                                     |",
+                    "|                                                                                                                     |",
+                    "|                                                                                                                     |",
+                    "|                                                                                                                     |",
+                    "|                                                                                                                     |",
+                    "|                                                                                                                     |",
+                    "|                                                                                                                     |",
+                    "|                                                                                                                     |",
+                    "|                                                                                                                     |",
+                    "|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||"
+                    };
+                    
+
+                    List<string> startingLevelDisplay = new List<string>
+                    {
+                        $"Level: {level}"
+                    };
+
+                    List<string> startingHealthDisplay = new List<string>
+                    {
+                        $"Health: {healthDisplayString}"
+                    };
+
+                    List<string> startingScoreDisplay = new List<string>
+                    {
+                        $"Score: {currentScore}"
                     };
 
                     List<string> playerIcon = new List<string>
@@ -256,41 +322,95 @@ class Program
 
                     // Add background images. 
                     Background playfeild = new Background(0, 0, gameBackground); // * first you need to draw out the object. 
+                    Background levelBackground = new Background(0, 0, startingLevelDisplay);
+                    Background healthBackground = new Background(0, 0, startingHealthDisplay);
+                    Background scoreBackground = new Background(0, 0, startingScoreDisplay);
 
                     game = new LoadScreen();
                     game.AddBackground(playfeild);
+                    game.AddBackground(levelBackground);
+                    game.AddBackground(healthBackground);
+                    game.AddBackground(scoreBackground);
 
                     backgrounds = game.GetBackground();
-                    List<int> playSpace = backgrounds[0].GetRect();
-                    game.Update(keysPressed, playSpace, frameCounter);
+                    List<int> playingSpace = backgrounds[0].GetRect();
+                    List<int> levelSpace = backgrounds[1].GetRect();
+                    game.Update(keysPressed, playingSpace, frameCounter);
                     int width = backgrounds[0].GetWidth(); //* Then you need to place it in the middle of the screen by using (width - screenWidth) / 2
+                    int levelWidth = backgrounds[1].GetWidth();
 
                     int gameLeft = (screenWidth - width) / 2; // ! I made this so that I can calculate where the Health, Energy, Button options, and wave display will show up... Though maybe Ill put the wave in the true middle. 
-                    backgrounds[0].SetLocation(gameLeft, 1);
+                    int levelLeft = (screenWidth - levelWidth) / 2;
+                    backgrounds[0].SetLocation(gameLeft, 6);
+                    backgrounds[1].SetLocation(levelLeft, 2);
+                    backgrounds[2].SetLocation(gameLeft, 4);
+                    backgrounds[3].SetLocation(levelLeft, screenHeight - 3);
 
                     game.SetBackground(backgrounds);
 
                     // Add the player 
-                    Player localPlayer1 = new Player(gameLeft + 3, 3, playerIcon, 300, baseProjectile);
+                    Player localPlayer1 = new Player(gameLeft + 3, 10, playerIcon, 55, baseProjectile);
 
                     game.AddPlayer(localPlayer1);
 
+                    sceneChange = false;
+
                 }
 
+                player = game.GetPlayers();
+                player.SetDimensions();
 
+                // setting various variables. 
+                healthDisplayNumber = player.GetHealth();
+                healthDisplayString = string.Concat(Enumerable.Repeat("[]", healthDisplayNumber));
+
+                List<string> levelDisplay = new List<string>
+                {
+                    $"Level: {level}"
+                };
+
+                List<string> healthDisplay = new List<string>
+                {
+                    $"Health: {healthDisplayString}"
+                };
+
+                List<string> scoreDisplay = new List<string>
+                {
+                    $"Score: {currentScore}"
+                };
+
+                backgrounds = game.GetBackground();
+                backgrounds[1].SetImage(levelDisplay);
+                backgrounds[2].SetImage(healthDisplay);
+                backgrounds[3].SetImage(scoreDisplay);
+
+                List<int> playSpace = backgrounds[0].GetRect();
+
+                game.SetBackground(backgrounds);
+
+
+
+                game.Update(keysPressed, playSpace, frameCounter);
 
                 if (screenSizeChanged == true)
                 {
+                    Console.Clear(); 
                     Player localPlayer2 = game.GetPlayers();
                     localPlayer2.SetDimensions();
                     game.SetPlayer(ref localPlayer2);
                     // Redrawing the background if the screen size has changed. 
                     backgrounds = game.GetBackground();
-                    List<int> playSpace = backgrounds[0].GetRect();
+                    playSpace = backgrounds[0].GetRect();
+                    List<int> levelSpace = backgrounds[1].GetRect();
                     game.Update(keysPressed, playSpace, frameCounter);
                     int width = backgrounds[0].GetWidth();
+                    int levelWidth = backgrounds[1].GetWidth();
                     int gameLeft = (screenWidth - width) / 2;
-                    backgrounds[0].SetLocation(gameLeft, 1);
+                    int levelLeft = (screenWidth - levelWidth) / 2;
+                    backgrounds[0].SetLocation(gameLeft, 6);
+                    backgrounds[1].SetLocation(levelLeft, 2);
+                    backgrounds[2].SetLocation(gameLeft, 4);
+                    backgrounds[3].SetLocation(levelLeft, screenHeight - 3);
                     game.SetBackground(backgrounds);
                 }
 
@@ -299,23 +419,143 @@ class Program
 
                 backgrounds = game.GetBackground();
                 List<int> playerSpace = backgrounds[0].GetRect();
-                game.Update(keysPressed, playerSpace, frameCounter);
+                
 
                 // Setup projectile stats
                 // Base projectile
 
-                // Check for projectiles. 
+                // Check for player projectiles. 
                 if (keysPressed.Contains(ConsoleKey.Spacebar))
                 {   
-                    baseProjectile = new Projectile(0, 0, lineProjectile, 3, 3, true, baseBulletSpeed);
+                    baseProjectile = new Projectile(0, 0, lineProjectile, true);
                     int x = player.GetX();
                     int y = player.GetY();
                     baseProjectile.SetLocation(x + 1, y);
-                    game.AddPlayerProjectile(baseProjectile);
-                    game.Update(keysPressed, playerSpace, frameCounter); 
-
+                    baseProjectile.SetDimensions();
+                    game.AddPlayerProjectile(baseProjectile); 
+                    game.Update(keysPressed, playerSpace, frameCounter);
                 }
                 
+
+                //Spawn enemies
+
+                spawnClock.SetFrames(spawnRate);
+                bool spawn = spawnClock.Animate(frameCounter);
+
+                if (spawn)
+                {   
+                    enemies = game.GetEnemies();
+                    backgrounds = game.GetBackground(); 
+                    List<int> rect = backgrounds[0].GetRect(); 
+                    int randomPosition = random.Next(8,28);
+                    int spawnRow = (rect[1] - 2);
+
+                    List<int> spawnCordinates = new List<int>{spawnRow, randomPosition, spawnRow, randomPosition};
+
+                    while (spawnRow <= 20)
+                    {
+                        foreach (Enemy enemy in enemies)
+                        {
+                            bool collision = enemy.DetectCollision(spawnCordinates);
+                            if (collision)
+                            {
+                                spawnRow ++;
+                                spawnCordinates = new List<int>{spawnRow, randomPosition, spawnRow, randomPosition};
+                            }
+                            if (spawnRow == 28)
+                            {
+                                skipSpawn = true;
+                            }
+                        }
+                    }
+
+                    if (!skipSpawn)
+                    {   
+                        Enemy enemy = new Enemy(spawnRow, randomPosition, basicEnemy, 5);
+                        enemy.SetDimensions();
+                        game.AddEnemy(enemy);
+                    }
+                }
+
+                shootClock.SetFrames(bulletRate);
+                bool shoot = shootClock.Animate(frameCounter);
+
+                foreach (Enemy enemy in enemies)
+                {
+                    if (shoot)
+                    {
+                        baseProjectile = new Projectile(0, 0, circleProjectile, false);
+                        baseProjectile.SetDimensions();
+                        int x = enemy.GetX();
+                        int y = enemy.GetY();
+                        baseProjectile.SetLocation(x - 1, y);
+                        game.AddEnemyProjectile(baseProjectile);
+                    }
+                }
+                    
+
+                if (level == 0 || enemiesKilled >= enemyNumber)
+                {
+                    level += 1; 
+                    enemiesKilled = 0;
+                    double fractionSpawn = spawnRate / 1.2;
+                    spawnRate = (int)Math.Ceiling(fractionSpawn);
+                    double fractionEnemies = 10 * (level * 1.2);
+                    enemyNumber = (int)Math.Ceiling(fractionEnemies);
+                }
+
+                // Detect collisions and calculate damage. 
+                enemyProjectiles = game.GetEnemyProjectiles();
+                playerProjectiles = game.GetPlayerProjectiles();
+                foreach (Projectile projectile in enemyProjectiles)
+                {   
+                    List<int> playerRect = player.GetRect();
+                    bool playerCollision = projectile.DetectCollision(playerRect);
+
+                    backgrounds = game.GetBackground(); 
+                    List<int> rect = backgrounds[0].GetRect(); 
+                    int healthRow = (rect[0] + 2);
+                    List<int> healthCordinates = new List<int>{healthRow, 1, healthRow, screenHeight};
+
+                    bool backgroundCollision = projectile.DetectCollision(healthCordinates);
+
+                    if (playerCollision || backgroundCollision)
+                    {
+                        player.TakeDamage();
+                    }
+
+                    foreach (Projectile playerProjectile in playerProjectiles)
+                    {
+                        List<int> playerProjectileRect = playerProjectile.GetRect();
+                        bool projectileCollision = projectile.DetectCollision(playerProjectileRect);
+                        if (projectileCollision)
+                        {
+                            projectile.Destroy();
+                            playerProjectile.Destroy(); 
+                        }
+                    }
+                }
+                foreach (Projectile projectile in playerProjectiles)
+                {   
+                    if (enemies is List<Enemy>)
+                    {
+                        foreach(Enemy enemy in enemies)
+                        {   
+                            List<int> enemyRect = enemy.GetRect();
+                            bool enemyCollision = projectile.DetectCollision(enemyRect);
+                            if (enemyCollision)
+                            {
+                                enemy.TakeDamage();
+                                bool isDestroyed = enemy.GetDestroyed();
+                                if (isDestroyed)
+                                {
+                                    currentScore += 50;
+                                    enemiesKilled += 1;
+                                }
+                            }
+                        }
+                    }
+                }
 
                 game.Redraw();
 
