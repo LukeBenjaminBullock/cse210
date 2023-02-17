@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.Linq;
 
 public class Screen
 {
@@ -79,9 +80,9 @@ public class Object
         _height = height;
 
         int left = _x;
-        int right = _x + _width;
+        int right = _x + _width - 1;
         int top = _y;
-        int bottom = _y + _height;
+        int bottom = _y + _height - 1;
         List<int> rect = new List<int>
         {left, right, top, bottom};
 
@@ -160,28 +161,41 @@ public class Object
 
     public bool DetectCollision(List<int> otherRect)
     {
-        int left1 = otherRect[0];
-        int right1 = otherRect[1];
-        int top1 = otherRect[2];
-        int bottom1 = otherRect[3];
+        // Convert the object's rectangle to a polygon
+        List<Vector2> vertices = new List<Vector2>();
+        vertices.Add(new Vector2(_rect[0]+1, _rect[2]+1));
+        vertices.Add(new Vector2(_rect[1]-1, _rect[2]+1));
+        vertices.Add(new Vector2(_rect[1]-1, _rect[3]-1));
+        vertices.Add(new Vector2(_rect[0]+1, _rect[3]-1));
+        Polygon polygon1 = new Polygon(vertices);
 
-        int left2 = _rect[0];
-        int right2 = _rect[1];
-        int top2 = _rect[2];
-        int bottom2 = _rect[3];
+        // Convert the other rectangle to a polygon
+        vertices = new List<Vector2>();
+        vertices.Add(new Vector2(otherRect[0]+1, otherRect[2]+1));
+        vertices.Add(new Vector2(otherRect[1]-1, otherRect[2]+1));
+        vertices.Add(new Vector2(otherRect[1]-1, otherRect[3]-1));
+        vertices.Add(new Vector2(otherRect[0]+1, otherRect[3]-1));
+        Polygon polygon2 = new Polygon(vertices);
 
-        // Check if either the top right corner is overlapping another rectangle
-        if (left1 >= left2 && right1 <= right2 && top1 >= top2 && bottom1 <= bottom2)
+        // Check for overlap on each axis
+        List<Vector2> axes = new List<Vector2>();
+        axes.AddRange(polygon1.GetEdges().Select(edge => edge.Normal()));
+        axes.AddRange(polygon2.GetEdges().Select(edge => edge.Normal()));
+        foreach (Vector2 axis in axes)
         {
-            return true;
+            float min1 = polygon1.GetMinProjection(axis);
+            float max1 = polygon1.GetMaxProjection(axis);
+            float min2 = polygon2.GetMinProjection(axis);
+            float max2 = polygon2.GetMaxProjection(axis);
+            if (max1 < min2 || max2 < min1)
+            {
+                // There is a gap on this axis, so the polygons do not overlap
+                return false;
+            }
         }
 
-        if (left2 >= left1 && right2 <= right1 && top2 >= top1 && bottom2 <= bottom1)
-        {
-            return true;
-        }
-
-        return false;
+        // There is no gap on any axis, so the polygons overlap
+        return true;
     }
 }
 
@@ -465,7 +479,7 @@ public class LoadScreen
 
     public void AddEnemyProjectile(Projectile projectile)
     {
-        _playerProjectiles.Add(projectile);
+        _enemyProjectiles.Add(projectile);
     }
 
     public void AddPlayer(Player player)
@@ -582,16 +596,16 @@ public class LoadScreen
 
             if (_enemyProjectiles is List<Projectile>)
             {
-                for (int i = _playerProjectiles.Count - 1; i >= 0; i--)
+                for (int i = _enemyProjectiles.Count - 1; i >= 0; i--)
                 {
-                    var projectile = _playerProjectiles[i];
+                    var projectile = _enemyProjectiles[i];
                     projectile.SetDimensions(); 
                     projectile.Move(backgroundRect, frameCounter);
                     bool isDestroyed = projectile.GetDestroyed(); 
                     if (isDestroyed)
                     {   
                         projectile.Clear();
-                        _playerProjectiles.RemoveAt(i);
+                        _enemyProjectiles.RemoveAt(i);
                     }
                 }
             }
@@ -627,6 +641,11 @@ public class LoadScreen
         foreach (var projectile in _playerProjectiles)
         {
             projectile.Draw(); 
+        }
+
+        foreach (var projectile in _enemyProjectiles)
+        {
+            projectile.Draw();
         }
         
         if (_player is Player)
@@ -676,5 +695,129 @@ public class Animation
     public int GetTimes()
     {
         return _timesAnimated;
+    }
+}
+
+public class Vector2
+{
+    public float X { get; set; }
+    public float Y { get; set; }
+
+    public Vector2(float x, float y)
+    {
+        X = x;
+        Y = y;
+    }
+
+    public static Vector2 operator +(Vector2 a, Vector2 b)
+    {
+        return new Vector2(a.X + b.X, a.Y + b.Y);
+    }
+
+    public static Vector2 operator -(Vector2 a, Vector2 b)
+    {
+        return new Vector2(a.X - b.X, a.Y - b.Y);
+    }
+
+    public static Vector2 operator *(Vector2 a, float scalar)
+    {
+        return new Vector2(a.X * scalar, a.Y * scalar);
+    }
+
+    public static Vector2 operator /(Vector2 a, float scalar)
+    {
+        return new Vector2(a.X / scalar, a.Y / scalar);
+    }
+
+    public float Magnitude()
+    {
+        return (float)Math.Sqrt(X * X + Y * Y);
+    }
+
+    public Vector2 Normalize()
+    {
+        float magnitude = Magnitude();
+        return new Vector2(X / magnitude, Y / magnitude);
+    }
+
+    public static float Dot(Vector2 a, Vector2 b)
+    {
+        return a.X * b.X + a.Y * b.Y;
+    }
+
+    public static float AngleBetween(Vector2 a, Vector2 b)
+    {
+        float dotProduct = Dot(a, b);
+        float magA = a.Magnitude();
+        float magB = b.Magnitude();
+        return (float)Math.Acos(dotProduct / (magA * magB));
+    }
+}
+
+public class Polygon
+{
+    private readonly List<Vector2> _vertices;
+    private readonly List<Edge> _edges;
+
+    public Polygon(List<Vector2> vertices)
+    {
+        _vertices = vertices;
+        _edges = new List<Edge>();
+        for (int i = 0; i < _vertices.Count; i++)
+        {
+            int j = (i + 1) % _vertices.Count;
+            _edges.Add(new Edge(_vertices[i], _vertices[j]));
+        }
+    }
+
+    public List<Edge> GetEdges()
+    {
+        return _edges;
+    }
+
+    public float GetMinProjection(Vector2 axis)
+    {
+        float min = float.MaxValue;
+        foreach (Vector2 vertex in _vertices)
+        {
+            float projection = Vector2.Dot(vertex, axis);
+            if (projection < min)
+            {
+                min = projection;
+            }
+        }
+        return min;
+    }
+
+    public float GetMaxProjection(Vector2 axis)
+    {
+        float max = float.MinValue;
+        foreach (Vector2 vertex in _vertices)
+        {
+            float projection = Vector2.Dot(vertex, axis);
+            if (projection > max)
+            {
+                max = projection;
+            }
+        }
+        return max;
+    }
+}
+
+public class Edge
+{
+    public Vector2 Start { get; private set; }
+    public Vector2 End { get; private set; }
+
+    public Edge(Vector2 start, Vector2 end)
+    {
+        Start = start;
+        End = end;
+    }
+
+    public Vector2 Normal()
+    {
+        Vector2 edge = End - Start;
+        return new Vector2(-edge.Y, edge.X);
     }
 }

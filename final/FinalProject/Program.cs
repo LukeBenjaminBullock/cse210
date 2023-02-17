@@ -40,7 +40,13 @@ class Program
         spawnClock.SetFrames(600);
 
         Animation shootClock = new Animation(); 
-        shootClock.SetFrames(120);
+        shootClock.SetFrames(180);
+
+        Animation gameOverLength = new Animation();
+        gameOverLength.SetFrames(600);
+
+        Animation playerShoot = new Animation();
+        playerShoot.SetFrames(30);
 
         // Initialize variables
         List<string> lineProjectile = new List<string>
@@ -57,6 +63,8 @@ class Program
         {
             "{"
         };
+
+        
 
         HashSet<ConsoleKey> keysPressed = new HashSet<ConsoleKey>();
         List<Background> backgrounds = new List<Background>();
@@ -95,6 +103,8 @@ class Program
         bool skipSpawn = false; 
         int healthDisplayNumber = 55;
         string healthDisplayString = string.Concat(Enumerable.Repeat("[]", healthDisplayNumber));
+        int highscore = 0; 
+        bool canShoot = false;
 
         // Initilize other
 
@@ -102,13 +112,14 @@ class Program
 
         Random random = new Random(); 
 
-        LoadScreen game = null;
+        LoadScreen game = new LoadScreen();
         LoadScreen start = null;
-        LoadScreen gameOver = null;
 
         Player player = null;
 
         // ! pregame test
+
+
         // ! End of test area 
 
 
@@ -191,8 +202,7 @@ class Program
                     {"Press Enter to Start: "};
 
                     List<string> highScore = new List<string>
-                    {"High Score: {highScoreNumber}"};
-
+                    {$"High Score: {highscore}"};
 
                     Background titleObject = new Background(0, 0, title);
 
@@ -247,6 +257,10 @@ class Program
                 if (keysPressed.Contains(ConsoleKey.Enter))
                 {
                     Console.Clear();
+                    Console.Beep(200, 2500);
+                    Console.Beep(400, 2500);
+                    Console.Beep(600, 2500);
+                    Console.Beep(800, 2500);
                     scene = "game";
                     sceneChange = true;
                 }
@@ -307,7 +321,7 @@ class Program
 
                     List<string> startingHealthDisplay = new List<string>
                     {
-                        $"Health: {healthDisplayString}"
+                        $"Error: Cant display health"
                     };
 
                     List<string> startingScoreDisplay = new List<string>
@@ -326,11 +340,12 @@ class Program
                     Background healthBackground = new Background(0, 0, startingHealthDisplay);
                     Background scoreBackground = new Background(0, 0, startingScoreDisplay);
 
-                    game = new LoadScreen();
                     game.AddBackground(playfeild);
                     game.AddBackground(levelBackground);
                     game.AddBackground(healthBackground);
                     game.AddBackground(scoreBackground);
+
+
 
                     backgrounds = game.GetBackground();
                     List<int> playingSpace = backgrounds[0].GetRect();
@@ -359,10 +374,20 @@ class Program
 
                 player = game.GetPlayers();
                 player.SetDimensions();
+                // healthDisplayNumber = player.GetHealth(); 
 
                 // setting various variables. 
-                healthDisplayNumber = player.GetHealth();
-                healthDisplayString = string.Concat(Enumerable.Repeat("[]", healthDisplayNumber));
+                 
+                healthDisplayString = "";
+
+                if (healthDisplayNumber > 0)
+                {
+                    for (int i = 0; i < healthDisplayNumber; i++)
+                    {
+                        healthDisplayString += "[]";
+                    }
+                }
+                
 
                 List<string> levelDisplay = new List<string>
                 {
@@ -371,7 +396,7 @@ class Program
 
                 List<string> healthDisplay = new List<string>
                 {
-                    $"Health: {healthDisplayString}"
+                    $"Health: {healthDisplayNumber}"
                 };
 
                 List<string> scoreDisplay = new List<string>
@@ -381,8 +406,11 @@ class Program
 
                 backgrounds = game.GetBackground();
                 backgrounds[1].SetImage(levelDisplay);
+                backgrounds[1].SetDimensions();
                 backgrounds[2].SetImage(healthDisplay);
+                backgrounds[2].SetDimensions();
                 backgrounds[3].SetImage(scoreDisplay);
+                backgrounds[3].SetDimensions();
 
                 List<int> playSpace = backgrounds[0].GetRect();
 
@@ -413,7 +441,7 @@ class Program
                     backgrounds[3].SetLocation(levelLeft, screenHeight - 3);
                     game.SetBackground(backgrounds);
                 }
-
+                
                 player = game.GetPlayers();
                 player.SetDimensions();
 
@@ -424,8 +452,15 @@ class Program
                 // Setup projectile stats
                 // Base projectile
 
+                bool shotTime = playerShoot.Animate(frameCounter);
+
+                if (shotTime)
+                {
+                    canShoot = true;
+                }
+
                 // Check for player projectiles. 
-                if (keysPressed.Contains(ConsoleKey.Spacebar))
+                if (keysPressed.Contains(ConsoleKey.Spacebar) && canShoot)
                 {   
                     baseProjectile = new Projectile(0, 0, lineProjectile, true);
                     int x = player.GetX();
@@ -434,6 +469,7 @@ class Program
                     baseProjectile.SetDimensions();
                     game.AddPlayerProjectile(baseProjectile); 
                     game.Update(keysPressed, playerSpace, frameCounter);
+                    canShoot = false;
                 }
                 
 
@@ -447,7 +483,7 @@ class Program
                     enemies = game.GetEnemies();
                     backgrounds = game.GetBackground(); 
                     List<int> rect = backgrounds[0].GetRect(); 
-                    int randomPosition = random.Next(8,28);
+                    int randomPosition = random.Next(7,27);
                     int spawnRow = (rect[1] - 2);
 
                     List<int> spawnCordinates = new List<int>{spawnRow, randomPosition, spawnRow, randomPosition};
@@ -502,6 +538,8 @@ class Program
                     spawnRate = (int)Math.Ceiling(fractionSpawn);
                     double fractionEnemies = 10 * (level * 1.2);
                     enemyNumber = (int)Math.Ceiling(fractionEnemies);
+                    double fractionBullets = 180 / (level * 1.2); 
+                    bulletRate = (int)Math.Ceiling(fractionBullets);
                 }
 
                 // Detect collisions and calculate damage. 
@@ -515,13 +553,15 @@ class Program
                     backgrounds = game.GetBackground(); 
                     List<int> rect = backgrounds[0].GetRect(); 
                     int healthRow = (rect[0] + 2);
-                    List<int> healthCordinates = new List<int>{healthRow, 1, healthRow, screenHeight};
+                    List<int> healthCordinates = new List<int>{healthRow, healthRow, 1, screenHeight};
 
                     bool backgroundCollision = projectile.DetectCollision(healthCordinates);
 
                     if (playerCollision || backgroundCollision)
                     {
+                        healthDisplayNumber -= 1;
                         player.TakeDamage();
+                        Console.Beep(100, 250);
                     }
 
                     foreach (Projectile playerProjectile in playerProjectiles)
@@ -557,18 +597,47 @@ class Program
                     }
                 }
 
+                bool isPlayerDestroyed = player.GetDestroyed(); 
+
+                if (isPlayerDestroyed)
+                {
+                    backgrounds.Clear();
+                    game.SetBackground(backgrounds);
+                    enemyProjectiles.Clear();
+                    game.SetEnemyProjectile(enemyProjectiles);
+                    player.Clear();
+                    game.SetPlayer(ref player);
+                    playerProjectiles.Clear();
+                    game.SetPlayerProjectile(playerProjectiles); 
+                    if (highscore < currentScore)
+                    {
+                        highscore = currentScore;
+                    }
+                    currentScore = 0;
+
+                    scene = "gameover";
+                    sceneChange = true; 
+                }
+
+                // As soon as the bullet hits the player, make sure to clear the bullet and do all actions related to that. It might change to false right after passing. 
+
+                // ! Didn't help at all. 
+                // game.SetEnemyProjectile(enemyProjectiles);
+                // game.SetPlayerProjectile(playerProjectiles);
+                // game.SetPlayer(ref player);
+
                 game.Redraw();
 
 
                 // Todo: Display the health, and have it change if the players total health ever drops. 
 
                 // Todo: Display the action options, and have a blinking line appear under a different option if it is selected. 
-                // Todo: Make it so that when the player presses the spacebar, they use an object. 
+
                 // Todo: Make it so that the player can only use an object option if they have enough energy.   
-                // Todo: Create objects in reference to the player when he uses them. 
+
                 // Todo: Display the energy. Have it drop when the player uses an option. 
                 // Todo: Make the energy and health increase slowly over time. 
-                // Todo: Keep track of the wave number. 
+
                 // Todo: Every three waves, increase the size of the game background until at the max size. 
                 // Todo: Have enemies randomly spawn in emply spaces in the far row. 
                 // Todo: Calculate enemy movements. 
@@ -591,38 +660,64 @@ class Program
             }
             else if (scene == "gameover")
             {
-                List<string> gameOverWords = new List<string>
-                    {
-                        "  ________          _",
-                        " /        \\        / \\         |\\        /|     |||||||||",
-                        "/                 /   \\        | \\      / |     |",
-                        "|       ____     /_____\\       |  \\    /  |     |||||||||",
-                        "\\          /    /       \\      |   \\  /   |     |",
-                        " \\________/    /         \\     |    \\/    |     |||||||||",
-                        "",
-                        "   ooooo",
-                        " o       o                 ______        ____",
-                        "o         o   \\      /    /      \\     |/    ",
-                        "o         o    \\    /    /  ______\\    |",
-                        " o       o      \\  /     |             |",
-                        "   ooooo         \\/       \\______/     |"
-                    };
-                Background gameoverText = new Background(0, 0, gameOverWords);
-                LoadScreen gameover = new LoadScreen();
-                gameover.AddBackground(gameoverText);
+                if (sceneChange)
+                {
+                    Console.Clear();
+                    Console.Beep(700, 2500);
+                    Console.Beep(500, 2500);
+                    Console.Beep(300, 2500);
+                    Console.Beep(100, 2500);
+                    List<string> gameOverWords = new List<string>
+                        {
+                            "  ________          _",
+                            " /        \\        / \\         |\\        /|     |||||||||",
+                            "/                 /   \\        | \\      / |     |",
+                            "|       ____     /_____\\       |  \\    /  |     |||||||||",
+                            "\\          /    /       \\      |   \\  /   |     |",
+                            " \\________/    /         \\     |    \\/    |     |||||||||",
+                            "",
+                            "   ooooo",
+                            " o       o                 ______        ____",
+                            "o         o   \\      /    /      \\     |/    ",
+                            "o         o    \\    /    /  ______\\    |",
+                            " o       o      \\  /     |             |",
+                            "   ooooo         \\/       \\______/     |"
+                        };
 
-                gameover.Update(keysPressed, screenRect, frameCounter);
+                    List<string> highScore = new List<string>
+                        {$"High Score: {highscore}"};
 
-                backgrounds = gameover.GetBackground();
+                    Background gameoverText = new Background(0, 0, gameOverWords);
+                    Background highScoreObject = new Background(0, 0, highScore);
+                    LoadScreen gameover = new LoadScreen();
+                    gameover.AddBackground(gameoverText);
+                    gameover.AddBackground(highScoreObject);
 
-                int width = backgrounds[0].GetWidth();
-                backgrounds[0].SetLocation((screenWidth - width) / 2, 6);
+                    gameover.Update(keysPressed, screenRect, frameCounter);
 
-                gameover.SetBackground(backgrounds);
-                gameover.Update(keysPressed, screenRect, frameCounter);
-                gameover.Redraw();
+                    backgrounds = gameover.GetBackground();
+
+                    int width = backgrounds[0].GetWidth();
+                    backgrounds[0].SetLocation((screenWidth - width) / 2, 10);
+                    backgrounds[1].SetLocation((screenWidth - width) / 2, screenHeight - 5);
+
+                    gameover.SetBackground(backgrounds);
+                    gameover.Update(keysPressed, screenRect, frameCounter);
+                    gameover.Redraw();
 
 
+                    sceneChange = false;
+                    
+                }
+                
+                // gameOverLength.SetFrames(frameCounter + 600);
+                // bool backToStart = gameOverLength.Animate(frameCounter);
+
+                // if (backToStart)
+                // {
+                //     scene = "start";
+                //     sceneChange = true;
+                // }
 
                 // Todo: Show the players total score. 
                 // Todo: Display a flashing: "New High score" If they got a new high score. 
